@@ -1,0 +1,23 @@
+const int pirpin = 9;
+const int motorpin = 2;
+int switchstate = 0;
+
+	void setup()
+{
+  pinMode(pirpin, INPUT);
+  pinMode(motorpin, OUTPUT);
+}
+
+	void loop()
+{
+  switchstate = digitalRead (pirpin);
+  if (switchstate == HIGH){
+  digitalWrite (motorpin, HIGH);             
+}
+      else {
+        delay (2000);
+  digitalWrite (motorpin, LOW);
+      
+    }
+             
+    }
