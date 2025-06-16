@@ -1,0 +1,66 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <qrcode.h>
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET    -1
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+void setup() {
+  Serial.begin(9600);
+  
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println(F("OLED failed!"));
+    while(1);
+  }
+
+  display.clearDisplay();
+  generateQRCode("https://tinyurl.com/5n8uyu2x"); // Shorten this URL!
+  display.display();
+}
+
+void loop() {}
+
+void generateQRCode(const char* url) {
+  QRCode qrcode;
+  uint8_t qrcodeData[qrcode_getBufferSize(3)];
+  qrcode_initText(&qrcode, qrcodeData, 3, ECC_MEDIUM, url);
+
+  int scale = 2;
+  int qrSize = qrcode.size * scale;
+  int offsetX = (SCREEN_WIDTH - qrSize) / 2;
+  int offsetY = (SCREEN_HEIGHT - qrSize) / 2;
+
+  display.clearDisplay();
+
+  // Draw white border around QR code
+  display.fillRect(offsetX-1, offsetY-1, qrSize+2, qrSize+2, SSD1306_WHITE);
+
+  // Draw QR code (inverted)
+  for (uint8_t y = 0; y < qrcode.size; y++) {
+    for (uint8_t x = 0; x < qrcode.size; x++) {
+      if (!qrcode_getModule(&qrcode, x, y)) {
+        display.fillRect(offsetX + (x * scale), offsetY + (y * scale), scale, scale, SSD1306_BLACK);
+      }
+    }
+  }
+
+  // Add text on left and right of QR code
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+
+  // Left side text (aligned to left)
+  display.setCursor(0, offsetY + qrSize / 2 - 8);  // Centered vertically
+  display.println("SHOW");
+  display.setCursor(0, offsetY + qrSize / 2); 
+  display.println("TEXT");
+
+  // Right side text (aligned to right of QR)
+  display.setCursor(offsetX + qrSize + 3, offsetY + qrSize / 2 - 8);
+  display.println("  IN");
+  display.setCursor(offsetX + qrSize + 3, offsetY + qrSize / 2);
+  display.println("  CAM");
+}
