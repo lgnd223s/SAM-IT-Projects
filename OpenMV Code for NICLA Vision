@@ -1,0 +1,40 @@
+import sensor, image, time, pyb
+
+# Set up solenoid control pin
+solenoid_pin = pyb.Pin('P2', pyb.Pin.OUT_PP)  
+
+# Setup camera
+sensor.reset()
+sensor.set_pixformat(sensor.RGB565)
+sensor.set_framesize(sensor.QVGA)
+sensor.skip_frames(time=2000)
+clock = time.clock()
+
+# Add valid QR code values here
+valid_codes = [
+    "Abdul Samad Siddiqui-2025-06-18",
+    "John Doe-2025-06-20"
+]
+
+# Function to unlock the solenoid
+def unlock_box():
+    print("QR Code Valid - Unlocking")
+    solenoid_pin.high()         # Energize solenoid
+    time.sleep(30000)           # Wait 30 seconds (30,000 ms)
+    solenoid_pin.low()          # Lock again
+    print("Box Locked")
+
+# Main loop
+print("QR Code Scanner Started...")
+while True:
+    clock.tick()
+    img = sensor.snapshot()
+    codes = img.find_qrcodes()
+    if codes:
+        for code in codes:
+            qr_text = code.payload()
+            print("Found QR:", qr_text)
+            if qr_text in valid_codes:
+                unlock_box()
+            else:
+                print("Invalid Code")
