@@ -1,43 +1,41 @@
-import sensor, image, time, pyb
+import sensor, image, time
+from machine import Pin
+import time
 
-# Setup pins
-solenoid_pin = pyb.Pin('D2', pyb.Pin.OUT_PP)
-green_led = pyb.LED(2)  # Green LED
-red_led = pyb.LED(1)    # Red LED
-
-# Initial states
-solenoid_pin.low()      # Solenoid off
-green_led.off()
-red_led.on()            # Red LED means locked
-
-# Camera config
+# Setup
 sensor.reset()
 sensor.set_pixformat(sensor.RGB565)
-sensor.set_framesize(sensor.QVGA)  # 320x240
+sensor.set_framesize(sensor.QVGA)
 sensor.skip_frames(time=2000)
 clock = time.clock()
 
-def unlock_box():
-    print("QR Code Detected --> Unlocking Box")
-    red_led.off()            # Turn off red LED
-    green_led.on()           # Green LED on
-    solenoid_pin.high()      # Unlock the solenoid
-    time.sleep_ms(3000)      # Wait 3 seconds
-    solenoid_pin.low()       # Lock the solenoid
-    green_led.off()          # Turn off green LED
-    red_led.on()             # Turn red LED back on
-    print("Box relocked.")
+# Pin assignments
+solenoid = Pin("D2", Pin.OUT)
+red_led = Pin("LED_R", Pin.OUT)
+green_led = Pin("LED_G", Pin.OUT)
 
-print("QR code scanner running...")
+# Initial state: Locked (red on)
+solenoid.low()
+red_led.high()
+green_led.low()
 
 while True:
     clock.tick()
     img = sensor.snapshot()
-    codes = img.find_qrcodes()
 
+    # Look for any QR code
+    codes = img.find_qrcodes()
     if codes:
-        for code in codes:
-            qr_text = code.payload()
-            print("QR code found:", qr_text)
-            unlock_box()
-            break  # Only unlock once per scan
+        # Unlock
+        solenoid.high()
+        red_led.low()
+        green_led.high()
+        time.sleep_ms(100)  # 100ms pulse
+        solenoid.low()
+
+        # Re-lock indication
+        red_led.high()
+        green_led.low()
+
+        # Optional: pause to prevent re-triggering too quickly
+        time.sleep(2)
