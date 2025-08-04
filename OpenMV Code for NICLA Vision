@@ -1,41 +1,42 @@
 import sensor, image, time
 from machine import Pin
-import time
 
-# Setup
+# Initialize camera
 sensor.reset()
 sensor.set_pixformat(sensor.RGB565)
 sensor.set_framesize(sensor.QVGA)
 sensor.skip_frames(time=2000)
-clock = time.clock()
 
-# Pin assignments
-solenoid = Pin("D2", Pin.OUT)
-red_led = Pin("LED_R", Pin.OUT)
-green_led = Pin("LED_G", Pin.OUT)
+# Initialize pins
+solenoid = Pin("D3", Pin.OUT)
+red_led = Pin("D1", Pin.OUT)
+green_led = Pin("D2", Pin.OUT)
 
-# Initial state: Locked (red on)
+# Initial state: locked
 solenoid.low()
 red_led.high()
 green_led.low()
 
+clock = time.clock()
+
+print("SCANNING FOR QR CODE")
+
 while True:
     clock.tick()
-    img = sensor.snapshot()
+    try:
+        img = sensor.snapshot()  # This must be called every loop
+        codes = img.find_qrcodes()
 
-    # Look for any QR code
-    codes = img.find_qrcodes()
-    if codes:
-        # Unlock
-        solenoid.high()
-        red_led.low()
-        green_led.high()
-        time.sleep_ms(100)  # 100ms pulse
-        solenoid.low()
-
-        # Re-lock indication
-        red_led.high()
-        green_led.low()
-
-        # Optional: pause to prevent re-triggering too quickly
-        time.sleep(2)
+        if codes:
+            print("UNLOCKED")
+            solenoid.high()
+            red_led.low()
+            green_led.high()
+            time.sleep_ms(100)
+            solenoid.low()
+            red_led.high()
+            green_led.low()
+            time.sleep(2)
+            print("SCANNING FOR QR CODE")
+    except Exception as e:
+        print("Error:", e)
